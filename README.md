@@ -13,6 +13,9 @@ instantly pull up the right resume version.
 - Search by company/role and filter by status.
 - At-a-glance metrics (total, interviews, offers, follow-ups due).
 - Export everything to CSV.
+- 🎨 A cheerful, animated UI — gradient background, glassy cards, rotating
+  motivational messages, and balloons/confetti to celebrate every application
+  and offer. The job hunt is hard; the app keeps your spirits up.
 
 ## Setup
 

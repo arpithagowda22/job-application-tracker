@@ -12,6 +12,7 @@ Data is stored locally:
 Run:  streamlit run app.py
 """
 
+import random
 import sqlite3
 import uuid
 from datetime import date, datetime
@@ -41,6 +42,132 @@ STATUS_COLORS = {
     "Accepted": "#059669",
     "Rejected": "#ef4444",
 }
+
+# Rotating uplifting messages — the job hunt is hard, so the app cheers you on.
+MOTIVATIONAL_MESSAGES = [
+    "Every application is a step closer. Keep going! 🚀",
+    "Rejections are just redirections. You've got this! 💪",
+    "Your dream job is out there looking for you too. ✨",
+    "Progress, not perfection. One application at a time. 🌱",
+    "Today's effort is tomorrow's offer letter. 🌟",
+    "You're braver than you think and more capable than you know. 💛",
+    "Big things take time. Trust the process. 🌈",
+    "Each 'no' filters out the wrong fit for the perfect 'yes'. 🎯",
+]
+
+
+def inject_custom_css() -> None:
+    """
+    Inject custom CSS to give the app an animated, joyful look:
+    a soft moving gradient background, glassy cards, a gradient title,
+    colorful metric tiles, and hover effects. Purely cosmetic.
+    """
+    st.markdown(
+        """
+        <style>
+        /* Friendly rounded font for the whole app */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        html, body, [class*="css"] { font-family: 'Poppins', sans-serif; }
+
+        /* Soft animated gradient background that slowly drifts */
+        .stApp {
+            background: linear-gradient(-45deg, #fceabb, #f8b6d2, #c3aed6, #a0d8ef, #b5ead7);
+            background-size: 400% 400%;
+            animation: gradientShift 18s ease infinite;
+        }
+        @keyframes gradientShift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassy translucent main panel so text stays readable over the gradient */
+        .block-container {
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 2rem 2.5rem 3rem 2.5rem;
+            margin-top: 1.5rem;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+
+        /* Gradient animated title */
+        h1 {
+            background: linear-gradient(90deg, #7c3aed, #db2777, #2563eb);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shine 6s linear infinite;
+            font-weight: 700 !important;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
+        /* Colorful metric tiles with a gentle lift on hover */
+        [data-testid="stMetric"] {
+            background: linear-gradient(135deg, #ffffff, #f3e8ff);
+            border-radius: 18px;
+            padding: 16px 18px;
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        [data-testid="stMetric"]:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 22px rgba(124, 58, 237, 0.18);
+        }
+        [data-testid="stMetricValue"] { color: #7c3aed; font-weight: 700; }
+
+        /* Application cards (expanders): rounded, white, lift on hover */
+        [data-testid="stExpander"] {
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 16px !important;
+            border: 1px solid rgba(124, 58, 237, 0.12) !important;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        [data-testid="stExpander"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.15);
+        }
+
+        /* Playful gradient buttons */
+        .stButton > button, .stDownloadButton > button {
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #7c3aed, #db2777);
+            color: white;
+            font-weight: 600;
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .stButton > button:hover, .stDownloadButton > button:hover {
+            transform: scale(1.04);
+            filter: brightness(1.08);
+            color: white;
+        }
+
+        /* The motivational banner pill */
+        .motivation-banner {
+            background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(219,39,119,0.12));
+            border: 1px solid rgba(124, 58, 237, 0.25);
+            border-radius: 16px;
+            padding: 12px 20px;
+            text-align: center;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #6d28d9;
+            margin-bottom: 8px;
+            animation: floaty 4s ease-in-out infinite;
+        }
+        @keyframes floaty {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-4px); }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # --- Database layer ----------------------------------------------------------
@@ -215,7 +342,8 @@ def render_add_form() -> None:
             # Only store the follow-up date if the reminder checkbox was ticked.
             "follow_up_date": follow_up_date.isoformat() if set_follow_up else None,
         })
-        st.sidebar.success(f"Saved application to {company}!")
+        # Flag a celebration to fire after the rerun (balloons + a cheerful toast).
+        st.session_state["just_added"] = company.strip()
         st.rerun()
 
 
@@ -314,6 +442,9 @@ def render_application_row(row: pd.Series) -> None:
             )
             if new_status != row["status"]:
                 update_status(int(row["id"]), new_status)
+                # Celebrate the big wins — an offer or acceptance deserves confetti!
+                if new_status in ("Offer", "Accepted"):
+                    st.session_state["celebrate_offer"] = row["company"]
                 st.rerun()
         with col_delete:
             st.write("")  # spacer to align the button
@@ -323,12 +454,37 @@ def render_application_row(row: pd.Series) -> None:
 
 
 # --- Main app ----------------------------------------------------------------
+def fire_celebrations() -> None:
+    """Show balloons/snow + a cheerful toast after an add or an offer."""
+    added_company = st.session_state.pop("just_added", None)
+    if added_company:
+        st.balloons()
+        st.toast(f"🎉 Application to {added_company} saved — another step forward!", icon="🎈")
+
+    if "celebrate_offer" in st.session_state:
+        company = st.session_state.pop("celebrate_offer")
+        st.balloons()
+        st.snow()
+        st.toast(f"🎊 An offer from {company}! You absolutely earned this!", icon="🏆")
+        st.success(f"🏆 Congratulations on the offer from **{company}**! 🎉")
+
+
 def main() -> None:
-    st.set_page_config(page_title="Job Application Tracker", page_icon="📋", layout="wide")
+    st.set_page_config(page_title="Job Application Tracker", page_icon="🎯", layout="wide")
+    inject_custom_css()
     init_storage()
 
-    st.title("📋 Job Application Tracker")
-    st.caption("Track every application and the exact resume you used for each company.")
+    # Fire any pending celebration from the previous action.
+    fire_celebrations()
+
+    st.title("🎯 Job Application Tracker")
+    st.caption("Track every application and the exact resume you used — and feel good doing it. 💛")
+
+    # A floating, rotating motivational message to keep spirits up.
+    st.markdown(
+        f"<div class='motivation-banner'>{random.choice(MOTIVATIONAL_MESSAGES)}</div>",
+        unsafe_allow_html=True,
+    )
 
     render_add_form()
 
