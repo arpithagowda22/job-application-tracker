@@ -1,0 +1,10 @@
+# Personal data — NEVER commit your applications or resume files
+data/
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
