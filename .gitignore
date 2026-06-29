@@ -2,6 +2,9 @@
 data/
 *.db
 
+# Local-only backup of the original hero image (not for the public repo)
+static/img/hero_original_backup.jpg
+
 # Python
 __pycache__/
 *.pyc
