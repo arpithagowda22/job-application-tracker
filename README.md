@@ -9,6 +9,8 @@ resume storage) with a **bespoke animated front-end** (HTML / CSS / vanilla JS)
 — aurora background, glassmorphism cards, smooth motion, and confetti when you
 land an offer.
 
+![Job Application Tracker screenshot](docs/screenshot.png)
+
 ## Features
 
 - Add applications with company, role, date, status, location, job link, notes.
